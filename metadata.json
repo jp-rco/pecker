@@ -1,0 +1,6 @@
+{
+  "name": "PeckerNutrition AI Analytics",
+  "description": "Livestock nutrition analysis platform with n8n integration, real-time dashboards, and RAG-powered insights for livestock supplements.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
