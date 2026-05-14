@@ -5,6 +5,7 @@ import multer from "multer";
 import cors from "cors";
 import axios from "axios";
 import dotenv from "dotenv";
+import FormData from "form-data";
 
 dotenv.config();
 
@@ -29,13 +30,8 @@ app.post("/api/analyze", upload.single("file"), async (req, res) => {
     
     // If no n8n URL is provided, we'll return a helpful error or some mock data for development
     if (!n8nUrl) {
-       // Return a mock result for demonstration if n8n is not configured
-       // This allows the UI to be tested even without the n8n backend ready
        console.warn("N8N_WEBHOOK_URL not configured. Returning mock data.");
-       
-       // Simulate processing time
        await new Promise(resolve => setTimeout(resolve, 2000));
-       
        return res.json({
          success: true,
          data: {
@@ -62,42 +58,54 @@ app.post("/api/analyze", upload.single("file"), async (req, res) => {
        });
     }
 
-    // Prepare form data for n8n
-    const formData = new FormData();
-    const blob = new Blob([file.buffer], { type: file.mimetype });
-    formData.append("file", blob, file.originalname);
+    // Using form-data package for maximum compatibility in Node.js envs
+    const form = new FormData();
+    form.append("file", file.buffer, {
+      filename: file.originalname,
+      contentType: file.mimetype,
+    });
 
-    const response = await axios.post(n8nUrl, formData, {
+    const response = await axios.post(n8nUrl, form, {
       headers: {
-        "Content-Type": "multipart/form-data",
+        ...form.getHeaders(),
       },
     });
 
     res.json(response.data);
-  } catch (error) {
-    console.error("Error analyzing file:", error);
-    res.status(500).json({ error: "Failed to analyze file with n8n" });
+  } catch (error: any) {
+    console.error("Error analyzing file:", error.message);
+    res.status(500).json({ 
+      error: "Failed to analyze file with n8n",
+      details: error.response?.data || error.message 
+    });
   }
 });
 
 // Vite middleware for development
 async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
+  // Serve static files from dist in production
+  if (process.env.NODE_ENV === "production" || process.env.VITE_PROD === "true") {
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath));
+    // Important: API routes must come BEFORE the wildcard catch-all
+    app.get("*", (req, res) => {
+      // If the request is for an API that doesn't exist, don't serve index.html
+      if (req.path.startsWith('/api')) {
+        return res.status(404).json({ error: "API endpoint not found" });
+      }
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  } else {
+    // Development mode with Vite middleware
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
   });
 }
 
