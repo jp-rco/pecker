@@ -8,6 +8,7 @@ export const config = {
   api: {
     bodyParser: false,
   },
+  maxDuration: 300, // Allow up to 5 minutes for slow n8n workflows (Vercel max is 300s on Pro, 60s on Hobby)
 };
 
 function parseForm(req) {
@@ -87,7 +88,7 @@ export default async function handler(req, res) {
       headers: {
         ...form.getHeaders(),
       },
-      timeout: 25000,
+      timeout: 600000, // 10 minutes in milliseconds
     });
 
     return res.json(response.data);

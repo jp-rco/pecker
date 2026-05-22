@@ -53,13 +53,25 @@ export default function UploadSection({ onUploadSuccess }: UploadSectionProps) {
         body: formData,
       });
 
-      if (!response.ok) throw new Error("Error en el análisis");
+      if (!response.ok) {
+        let errorMessage = "Error en el análisis";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.details || errorMessage;
+        } catch (_) {
+          // ignore parsing error if response isn't JSON
+        }
+        throw new Error(errorMessage);
+      }
 
       const result = await response.json();
       const analysisData = result?.data ?? result ?? {};
       onUploadSuccess(analysisData);
-    } catch (err) {
-      setError("No se pudo conectar con el servicio de análisis. Asegúrate de que el servidor esté funcionando.");
+    } catch (err: any) {
+      setError(
+        err.message || 
+        "No se pudo conectar con el servicio de análisis. Asegúrate de que el servidor esté funcionando."
+      );
       console.error(err);
     } finally {
       setIsUploading(false);

@@ -69,6 +69,7 @@ app.post("/api/analyze", upload.single("file"), async (req, res) => {
       headers: {
         ...form.getHeaders(),
       },
+      timeout: 600000, // 10 minutes in milliseconds
     });
 
     res.json(response.data);
@@ -104,9 +105,15 @@ async function startServer() {
     app.use(vite.middlewares);
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}`);
   });
+  
+  // Set timeouts to 10 minutes to allow slow n8n workflows
+  server.timeout = 600000;
+  server.requestTimeout = 600000;
+  server.keepAliveTimeout = 600000;
+  server.headersTimeout = 605000;
 }
 
 startServer();
