@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "chmod +x node_modules/.bin/vite node_modules/.bin/esbuild && npm run build",
   "outputDirectory": "dist",
   "routes": [
     {
