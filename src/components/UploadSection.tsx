@@ -56,7 +56,8 @@ export default function UploadSection({ onUploadSuccess }: UploadSectionProps) {
       if (!response.ok) throw new Error("Error en el análisis");
 
       const result = await response.json();
-      onUploadSuccess(result.data);
+      const analysisData = result?.data ?? result ?? {};
+      onUploadSuccess(analysisData);
     } catch (err) {
       setError("No se pudo conectar con el servicio de análisis. Asegúrate de que el servidor esté funcionando.");
       console.error(err);
