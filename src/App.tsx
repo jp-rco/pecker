@@ -18,10 +18,11 @@ import { AnalysisResult } from "./lib/types";
 import UploadSection from "./components/UploadSection";
 import Dashboard from "./components/Dashboard";
 import AIChat from "./components/AIChat";
+import HistoryList from "./components/HistoryList";
 
 export default function App() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "upload">("upload");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "upload" | "history" | "chat">("upload");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const handleUploadSuccess = (data: AnalysisResult) => {
@@ -32,7 +33,7 @@ export default function App() {
   const navItems = [
     { id: "upload", label: "Subir Inventario", icon: FileBox },
     { id: "dashboard", label: "Panel de Análisis", icon: LayoutDashboard, disabled: !analysisResult },
-    { id: "history", label: "Historial de Lotes", icon: Tractor, disabled: true },
+    { id: "history", label: "Historial de Lotes", icon: Tractor, disabled: false },
     { id: "chat", label: "Experto Nutricional", icon: MessageSquare },
   ];
 
@@ -149,6 +150,23 @@ export default function App() {
                   <Dashboard 
                     data={analysisResult} 
                     onReset={() => setActiveTab("upload")} 
+                  />
+                </motion.div>
+              )}
+
+              {activeTab === "history" && (
+                <motion.div
+                  key="history"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                >
+                  <HistoryList 
+                    onSelect={(data) => {
+                      setAnalysisResult(data);
+                      setActiveTab("dashboard");
+                    }} 
+                    onNavigateToUpload={() => setActiveTab("upload")}
                   />
                 </motion.div>
               )}

@@ -2,6 +2,9 @@ import React, { useState, useRef } from "react";
 import { Upload, FileSpreadsheet, X, Loader2, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
+import { db, storage } from "../lib/firebase";
+import { collection, addDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 interface UploadSectionProps {
   onUploadSuccess: (data: any) => void;
@@ -10,6 +13,7 @@ interface UploadSectionProps {
 export default function UploadSection({ onUploadSuccess }: UploadSectionProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadStep, setUploadStep] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,6 +46,7 @@ export default function UploadSection({ onUploadSuccess }: UploadSectionProps) {
     if (!file) return;
 
     setIsUploading(true);
+    setUploadStep("Analizando Excel con IA...");
     setError(null);
 
     const formData = new FormData();
@@ -66,6 +71,48 @@ export default function UploadSection({ onUploadSuccess }: UploadSectionProps) {
 
       const result = await response.json();
       const analysisData = result?.data ?? result ?? {};
+
+      setUploadStep("Guardando reporte en Firebase...");
+
+      let fileUrl = null;
+      let fileBase64 = null;
+
+      try {
+        // 1. Try to upload file to Firebase Storage
+        const fileRef = ref(storage, `inventories/${Date.now()}_${file.name}`);
+        const uploadResult = await uploadBytes(fileRef, file);
+        fileUrl = await getDownloadURL(uploadResult.ref);
+      } catch (storageError) {
+        console.warn("Storage upload failed, falling back to Base64 in Firestore", storageError);
+        // Fallback: If file is < 800KB, read it as Base64 and store it in Firestore
+        if (file.size < 800 * 1024) {
+          try {
+            fileBase64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.readAsDataURL(file);
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = (error) => reject(error);
+            });
+          } catch (readError) {
+            console.error("Failed to read file as Base64", readError);
+          }
+        }
+      }
+
+      // 2. Save document to Firestore under "analyses"
+      try {
+        await addDoc(collection(db, "analyses"), {
+          fileName: file.name,
+          fileSize: file.size,
+          fileUrl,
+          fileBase64,
+          uploadedAt: new Date().toISOString(),
+          analysisResult: analysisData
+        });
+      } catch (firestoreError) {
+        console.error("Failed to save analysis metadata to Firestore", firestoreError);
+      }
+
       onUploadSuccess(analysisData);
     } catch (err: any) {
       setError(
@@ -75,6 +122,7 @@ export default function UploadSection({ onUploadSuccess }: UploadSectionProps) {
       console.error(err);
     } finally {
       setIsUploading(false);
+      setUploadStep("");
     }
   };
 
@@ -179,7 +227,7 @@ export default function UploadSection({ onUploadSuccess }: UploadSectionProps) {
             {isUploading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Procesando en n8n...</span>
+                <span>{uploadStep || "Procesando..."}</span>
               </>
             ) : (
               <>

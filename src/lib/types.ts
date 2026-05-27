@@ -22,3 +22,14 @@ export interface Message {
   role: "user" | "assistant";
   content: string;
 }
+
+export interface SavedAnalysis {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  fileUrl?: string | null;
+  fileBase64?: string | null;
+  uploadedAt: any;
+  analysisResult: any; // Using any to support ExtendedAnalysisResult flexibility
+}
+
