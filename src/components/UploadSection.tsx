@@ -8,9 +8,10 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 interface UploadSectionProps {
   onUploadSuccess: (data: any) => void;
+  onLog?: (message: string, type: "upload" | "download" | "delete" | "view" | "info") => void;
 }
 
-export default function UploadSection({ onUploadSuccess }: UploadSectionProps) {
+export default function UploadSection({ onUploadSuccess, onLog }: UploadSectionProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStep, setUploadStep] = useState<string>("");
@@ -113,6 +114,9 @@ export default function UploadSection({ onUploadSuccess }: UploadSectionProps) {
         console.error("Failed to save analysis metadata to Firestore", firestoreError);
       }
 
+      if (onLog) {
+        onLog(`Se subió y analizó el archivo "${file.name}"`, "upload");
+      }
       onUploadSuccess(analysisData);
     } catch (err: any) {
       setError(

@@ -33,3 +33,11 @@ export interface SavedAnalysis {
   analysisResult: any; // Using any to support ExtendedAnalysisResult flexibility
 }
 
+export interface LogEntry {
+  id: string;
+  message: string;
+  timestamp: string;
+  type: "upload" | "download" | "delete" | "view" | "info";
+}
+
+

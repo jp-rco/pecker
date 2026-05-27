@@ -28,6 +28,7 @@ import { cn } from "../lib/utils";
 
 interface HistoryListProps {
   searchQuery?: string;
+  onLog?: (message: string, type: "upload" | "download" | "delete" | "view" | "info") => void;
   onSelect: (analysisResult: any) => void;
   onNavigateToUpload: () => void;
 }
@@ -133,7 +134,7 @@ const getPreviewMetrics = (rawResult: any) => {
   };
 };
 
-export default function HistoryList({ searchQuery = "", onSelect, onNavigateToUpload }: HistoryListProps) {
+export default function HistoryList({ searchQuery = "", onLog, onSelect, onNavigateToUpload }: HistoryListProps) {
   const [analyses, setAnalyses] = useState<SavedAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -186,17 +187,24 @@ export default function HistoryList({ searchQuery = "", onSelect, onNavigateToUp
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        if (onLog) {
+          onLog(`Se descargó el archivo "${item.fileName}"`, "download");
+        }
       } catch (err: any) {
         alert("Error al descargar el archivo guardado en la base de datos: " + err.message);
       }
     } else if (item.fileUrl) {
       window.open(item.fileUrl, "_blank");
+      if (onLog) {
+        onLog(`Se descargó el archivo "${item.fileName}"`, "download");
+      }
     } else {
       alert("El archivo físico no está disponible para descarga, pero puedes visualizar su tablero.");
     }
   };
 
   const handleDelete = async (id: string, fileUrl?: string | null) => {
+    const itemToDelete = analyses.find((item) => item.id === id);
     if (!window.confirm("¿Estás seguro de que deseas eliminar este lote del historial? Esta acción no se puede deshacer.")) {
       return;
     }
@@ -214,6 +222,10 @@ export default function HistoryList({ searchQuery = "", onSelect, onNavigateToUp
         } catch (storageErr) {
           console.warn("Storage deletion failed or file already deleted", storageErr);
         }
+      }
+
+      if (onLog && itemToDelete) {
+        onLog(`Se eliminó el lote "${itemToDelete.fileName}" del historial`, "delete");
       }
 
       setAnalyses(prev => prev.filter(item => item.id !== id));
@@ -414,7 +426,12 @@ export default function HistoryList({ searchQuery = "", onSelect, onNavigateToUp
                 {/* Footer Actions */}
                 <div className="p-4 bg-natural-subtle/50 border-t border-natural-border/40 flex gap-2">
                   <button
-                    onClick={() => onSelect(item.analysisResult)}
+                    onClick={() => {
+                      if (onLog) {
+                        onLog(`Se cargó el reporte "${item.fileName}" en el tablero`, "view");
+                      }
+                      onSelect(item.analysisResult);
+                    }}
                     className="flex-1 flex items-center justify-center gap-2 bg-natural-primary hover:bg-[#1A3012] text-white py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm"
                   >
                     <span>Ver Tablero</span>
