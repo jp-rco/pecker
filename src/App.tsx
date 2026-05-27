@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, ChangeEvent } from "react";
 import { 
   Tractor, 
   Menu, 
@@ -24,6 +24,15 @@ export default function App() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [activeTab, setActiveTab] = useState<"dashboard" | "upload" | "history" | "chat">("upload");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    if (val && activeTab !== "history") {
+      setActiveTab("history");
+    }
+  };
 
   const handleUploadSuccess = (data: AnalysisResult) => {
     setAnalysisResult(data);
@@ -99,7 +108,9 @@ export default function App() {
             <Search size={18} className="text-natural-light-text mr-2" />
             <input 
               type="text" 
-              placeholder="Buscar reportes, animales o lotes..." 
+              placeholder="Buscar reportes por palabra clave..." 
+              value={searchQuery}
+              onChange={handleSearchChange}
               className="bg-transparent border-none outline-none text-sm w-full"
             />
           </div>
@@ -162,11 +173,15 @@ export default function App() {
                   exit={{ opacity: 0, x: 20 }}
                 >
                   <HistoryList 
+                    searchQuery={searchQuery}
                     onSelect={(data) => {
                       setAnalysisResult(data);
                       setActiveTab("dashboard");
                     }} 
-                    onNavigateToUpload={() => setActiveTab("upload")}
+                    onNavigateToUpload={() => {
+                      setSearchQuery("");
+                      setActiveTab("upload");
+                    }}
                   />
                 </motion.div>
               )}

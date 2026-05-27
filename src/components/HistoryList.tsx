@@ -17,6 +17,7 @@ import {
   ArrowRight, 
   Download, 
   AlertTriangle,
+  Search,
   Tractor,
   Boxes
 } from "lucide-react";
@@ -26,6 +27,7 @@ import { SavedAnalysis } from "../lib/types";
 import { cn } from "../lib/utils";
 
 interface HistoryListProps {
+  searchQuery?: string;
   onSelect: (analysisResult: any) => void;
   onNavigateToUpload: () => void;
 }
@@ -131,7 +133,7 @@ const getPreviewMetrics = (rawResult: any) => {
   };
 };
 
-export default function HistoryList({ onSelect, onNavigateToUpload }: HistoryListProps) {
+export default function HistoryList({ searchQuery = "", onSelect, onNavigateToUpload }: HistoryListProps) {
   const [analyses, setAnalyses] = useState<SavedAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -248,6 +250,10 @@ export default function HistoryList({ onSelect, onNavigateToUpload }: HistoryLis
     );
   }
 
+  const filteredAnalyses = analyses.filter((item) =>
+    item.fileName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (analyses.length === 0) {
     return (
       <div className="glass-panel p-12 text-center max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -264,6 +270,47 @@ export default function HistoryList({ onSelect, onNavigateToUpload }: HistoryLis
         >
           Subir Inventario Nuevo
         </button>
+      </div>
+    );
+  }
+
+  if (filteredAnalyses.length === 0 && analyses.length > 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <span className="text-xs font-bold text-natural-primary uppercase tracking-[0.2em] mb-1 block">
+              Historial de operaciones
+            </span>
+            <h2 className="text-3xl font-serif font-black text-natural-primary">Historial de Lotes</h2>
+            <p className="text-sm text-natural-gray-text mt-1">
+              Consulta y descarga análisis anteriores almacenados en Firestore.
+            </p>
+          </div>
+          
+          <button 
+            onClick={fetchHistory}
+            className="text-xs font-bold uppercase tracking-widest bg-white border border-natural-border text-natural-gray-text hover:bg-natural-muted px-4 py-2.5 rounded-xl transition-all"
+          >
+            Sincronizar
+          </button>
+        </div>
+
+        <div className="glass-panel p-12 text-center max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="w-16 h-16 bg-natural-muted text-natural-primary rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+            <Search size={28} />
+          </div>
+          <h3 className="text-2xl font-serif font-black text-natural-primary mb-2">Sin Resultados</h3>
+          <p className="text-natural-gray-text text-sm mb-8 leading-relaxed max-w-md mx-auto">
+            No encontramos ningún lote que coincida con "{searchQuery}". Intenta con otra palabra clave.
+          </p>
+          <button
+            onClick={onNavigateToUpload}
+            className="bg-natural-secondary hover:bg-[#A65B30] text-white px-8 py-3.5 rounded-full font-bold transition-all active:scale-95 shadow-lg shadow-natural-secondary/20 text-sm uppercase tracking-wider"
+          >
+            Subir Inventario Nuevo
+          </button>
+        </div>
       </div>
     );
   }
@@ -291,7 +338,7 @@ export default function HistoryList({ onSelect, onNavigateToUpload }: HistoryLis
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AnimatePresence>
-          {analyses.map((item, idx) => {
+          {filteredAnalyses.map((item, idx) => {
             const preview = getPreviewMetrics(item.analysisResult);
             const isItemDeleting = isDeleting === item.id;
             
